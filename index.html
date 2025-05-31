@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoBooth by Tulinh</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h2>PhotoStory cùng Tuling</h2>
+  </header>
+
+  <main id="mainSection">
+    <div id="afterButtons" style="display: none; margin-top: 20px;">
+      <button id="editBtn">🛠 Edit Photos</button>
+      <button id="retakeBtn">🔁 Retake</button>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">📸 Take a Photo</button>
+    </div>
+
+    <div class="camera-wrapper">
+      <video id="camera" autoplay playsinline></video>
+      <div id="countdown">Get ready...</div>
+    </div>
+
+    <div class="thumbnails">
+      <div class="thumb"><img alt="1" /></div>
+      <div class="thumb"><img alt="2" /></div>
+      <div class="thumb"><img alt="3" /></div>
+      <div class="thumb"><img alt="4" /></div>
+    </div>
+
+    <div id="message" class="star-message">You're a star!</div>
+  </main>
+
+  <button onclick="loadTestImages()">🧪 Load Test Images</button>
+  
+  <section id="editSection" style="display: none;">
+    <div class="edit-container">
+      <div class="photostrip-frame">
+        <div class="photostrip-preview" id="photostripPreview"></div>
+      </div>
+      
+      <div class="edit-tools">
+        <div class="tool-section">
+          <h3>🎭 Stickers</h3>
+          <div class="stickers">
+            <div class="emoji-sticker" data-sticker="😊">😊</div>
+            <div class="emoji-sticker" data-sticker="🌟">🌟</div>
+            <div class="emoji-sticker" data-sticker="💖">💖</div>
+            <div class="emoji-sticker" data-sticker="🎉">🎉</div>
+            <div class="emoji-sticker" data-sticker="🌈">🌈</div>
+            <div class="emoji-sticker" data-sticker="✨">✨</div>
+            <div class="emoji-sticker" data-sticker="🦄">🦄</div>
+            <div class="emoji-sticker" data-sticker="🎈">🎈</div>
+            <div class="emoji-sticker" data-sticker="🍀">🍀</div>
+            <div class="emoji-sticker" data-sticker="🌸">🌸</div>
+            <div class="emoji-sticker" data-sticker="🎵">🎵</div>
+            <div class="emoji-sticker" data-sticker="💫">💫</div>
+
+            <div class="sticker-option" data-sticker-url="a.webp">
+                <img src="a.webp" alt="Sticker Image" />
+            </div>
+            <div class="sticker-option" data-sticker-url="b.webp">
+                <img src="b.webp" alt="Sticker Image" />
+            </div>
+            <div class="sticker-option" data-sticker-url="c.webp">
+                <img src="c.webp" alt="Sticker Image" />
+            </div>
+            
+          </div> 
+          <button id="removeStickers">🗑️ Xóa Stickers</button>
+        </div>
+
+        <div class="tool-section">
+          <h3>🖼️ Màu Khung</h3>
+          <div class="colors" id="frameColors">
+            <div class="color black selected" data-color="#000"></div>
+            <div class="color white" data-color="#fff"></div>
+            <div class="color pink" data-color="#fce4ec"></div>
+            <div class="color beige" data-color="#fdf1dc"></div>
+            <div class="color blue" data-color="#e3f2fd"></div>
+            <div class="color yellow" data-color="#fff9c4"></div>
+          </div>
+        </div>
+
+        <div class="tool-section">
+          <h3>🎨 Màu Nền</h3>
+          <div class="colors" id="bgColors">
+            <div class="color black selected" data-color="#000"></div>
+            <div class="color white" data-color="#fff"></div>
+            <div class="color pink" data-color="#fce4ec"></div>
+            <div class="color beige" data-color="#fdf1dc"></div>
+            <div class="color blue" data-color="#e3f2fd"></div>
+            <div class="color yellow" data-color="#fff9c4"></div>
+          </div>
+        </div>
+
+        <div class="tool-section">
+          <h3>📸 Bộ Lọc</h3>
+          <div class="filters">
+            <button data-filter="none" class="active">Gốc</button>
+            <button data-filter="grayscale(100%)">Đen Trắng</button>
+            <button data-filter="sepia(80%)">Sepia</button>
+            <button data-filter="brightness(1.2)">Sáng</button>
+            <button data-filter="contrast(1.2)">Tương Phản</button>
+            <button data-filter="hue-rotate(180deg)">Màu Lạ</button>
+          </div>
+        </div>
+
+        <label>
+          <span>📅 Hiển thị ngày</span>
+          <input type="checkbox" id="enableDate" />
+        </label>
+
+        <div class="actions">
+          <button id="previewBtn">👁️ Xem Trước</button>
+          <button id="downloadBtn">⬇️ Tải Xuống</button>
+          <button id="retakeFromEditBtn">📷 Chụp Lại</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    ➝ Made with ❤️ by TuLing
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
