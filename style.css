@@ -596,3 +596,6 @@ footer {
 #camera {
   transform: scaleX(-1)
 }
+video {
+  transform: scaleX(-1);
+}

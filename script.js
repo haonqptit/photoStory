@@ -97,59 +97,63 @@ function takePhoto() {
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
-  
-  // Vẽ video lên canvas
+
+  // Lật khung hình theo chiều ngang (mirror)
+  ctx.translate(canvas.width, 0);  // Dời hệ trục sang bên phải
+  ctx.scale(-1, 1);                // Lật trục X
+
+  // Vẽ video đã lật
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
-  // Vẽ sticker lên canvas nếu có
+
+  // Vẽ sticker nếu có
   const cameraSticker = document.querySelector('.camera-sticker');
   if (cameraSticker) {
-    const cameraWrapper = document.querySelector('.camera-wrapper');
     const videoRect = video.getBoundingClientRect();
     const stickerRect = cameraSticker.getBoundingClientRect();
-    
-    // Tính toán vị trí sticker tương đối với video
+
     const scaleX = canvas.width / videoRect.width;
     const scaleY = canvas.height / videoRect.height;
-    
+
+    // Tính vị trí sticker gốc
     const stickerX = (stickerRect.left - videoRect.left) * scaleX;
     const stickerY = (stickerRect.top - videoRect.top) * scaleY;
-    
-    // Kiểm tra loại sticker
+
+    // Tính lại vị trí X vì canvas đang bị lật ngược
+    const flippedStickerX = canvas.width - stickerX - (cameraSticker.offsetWidth * scaleX);
+
     if (cameraSticker.tagName === 'IMG') {
-      // Vẽ sticker ảnh - lấy kích thước thực từ element
-      const actualWidth = cameraSticker.offsetWidth || 120; // mặc định 120px nếu không đọc được
+      const actualWidth = cameraSticker.offsetWidth || 120;
       const actualHeight = cameraSticker.offsetHeight || 120;
       const stickerWidth = actualWidth * Math.min(scaleX, scaleY);
       const stickerHeight = actualHeight * Math.min(scaleX, scaleY);
-      
-      // Tạo promise để đợi ảnh load
+
       const img = new Image();
-      img.onload = function() {
-        ctx.drawImage(img, stickerX, stickerY, stickerWidth, stickerHeight);
+      img.onload = function () {
+        ctx.drawImage(img, flippedStickerX, stickerY, stickerWidth, stickerHeight);
       };
       img.src = cameraSticker.src;
-      
-      // Vẽ ngay lập tức nếu ảnh đã được cache
+
       if (img.complete) {
-        ctx.drawImage(img, stickerX, stickerY, stickerWidth, stickerHeight);
+        ctx.drawImage(img, flippedStickerX, stickerY, stickerWidth, stickerHeight);
       }
     } else {
-      // Vẽ emoji sticker
       ctx.font = `${48 * Math.min(scaleX, scaleY)}px Arial`;
       ctx.fillStyle = 'white';
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 2;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
-      // Vẽ outline cho text
-      ctx.strokeText(cameraSticker.textContent, stickerX + 24 * scaleX, stickerY + 24 * scaleY);
-      ctx.fillText(cameraSticker.textContent, stickerX + 24 * scaleX, stickerY + 24 * scaleY);
+
+      const centerX = flippedStickerX + 24 * scaleX;
+      const centerY = stickerY + 24 * scaleY;
+      ctx.strokeText(cameraSticker.textContent, centerX, centerY);
+      ctx.fillText(cameraSticker.textContent, centerX, centerY);
     }
   }
+
   return canvas.toDataURL('image/png');
 }
+
 
 // Thêm sticker lên camera video với vị trí và kích thước cố định
 function addStickerToCamera() {
