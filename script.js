@@ -23,15 +23,15 @@ let stream = null;
 // Danh sách sticker ảnh với vị trí và kích thước cố định
 const imageStickers = [
   {
-    url: 'anhnen.png',
+    url: 'ok.png',
     position: { top: '20px', right: '20px' }, // Góc trên bên phải
     size: { width: '200px', height: '200px' } // Kích thước rất to để test
   },
-  {
-    url: 'b.webp', 
-    position: { bottom: '20px', left: '20px' }, // Góc dưới bên trái
-    size: { width: '150px', height: '150px' } // Kích thước to
-  }
+  // {
+  //   url: 'b.webp', 
+  //   position: { bottom: '20px', left: '20px' }, // Góc dưới bên trái
+  //   size: { width: '150px', height: '150px' } // Kích thước to
+  // }
 ];
 
 
