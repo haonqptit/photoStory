@@ -20,36 +20,41 @@ const enableDateCheckbox = document.getElementById('enableDate');
 
 let stream = null;
 
-// Danh sách sticker ảnh với vị trí cố định
+// Danh sách sticker ảnh với vị trí và kích thước cố định
 const imageStickers = [
   {
     url: 'a.webp',
-    position: { top: '20px', right: '20px' },
-    size: { width: '150px', height: '150px' } // Sticker to
+    position: { top: '20px', right: '20px' }, // Góc trên bên phải
+    size: { width: '200px', height: '200px' } // Kích thước rất to để test
   },
   {
-    url: 'b.webp',
-    position: { bottom: '20px', left: '20px' },
-    size: { width: '100px', height: '80px' } // Sticker hình chữ nhật
+    url: 'b.webp', 
+    position: { bottom: '20px', left: '20px' }, // Góc dưới bên trái
+    size: { width: '150px', height: '150px' } // Kích thước to
   }
 ];
 
+// Bạn có thể thêm nhiều sticker với vị trí và kích thước khác nhau:
 // const imageStickers = [
 //   {
 //     url: 'a.webp',
-//     position: { top: '20px', right: '20px' }
+//     position: { top: '20px', right: '20px' },
+//     size: { width: '150px', height: '150px' } // Rất to
 //   },
 //   {
 //     url: 'b.webp',
-//     position: { bottom: '20px', left: '20px' }
+//     position: { bottom: '20px', left: '20px' },
+//     size: { width: '80px', height: '80px' } // Nhỏ
 //   },
 //   {
 //     url: 'c.webp',
-//     position: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+//     position: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+//     size: { width: '200px', height: '200px' } // Cực to
 //   },
 //   {
 //     url: 'd.webp',
-//     position: { top: '20px', left: '20px' }
+//     position: { top: '20px', left: '20px' },
+//     size: { width: '100px', height: '120px' } // Hình chữ nhật
 //   }
 // ];
 
@@ -112,9 +117,11 @@ function takePhoto() {
     
     // Kiểm tra loại sticker
     if (cameraSticker.tagName === 'IMG') {
-      // Vẽ sticker ảnh
-      const stickerWidth = 80 * Math.min(scaleX, scaleY);
-      const stickerHeight = 80 * Math.min(scaleX, scaleY);
+      // Vẽ sticker ảnh - lấy kích thước thực từ element
+      const actualWidth = cameraSticker.offsetWidth || 120; // mặc định 120px nếu không đọc được
+      const actualHeight = cameraSticker.offsetHeight || 120;
+      const stickerWidth = actualWidth * Math.min(scaleX, scaleY);
+      const stickerHeight = actualHeight * Math.min(scaleX, scaleY);
       
       // Tạo promise để đợi ảnh load
       const img = new Image();
@@ -144,7 +151,7 @@ function takePhoto() {
   return canvas.toDataURL('image/png');
 }
 
-// Thêm sticker lên camera video với vị trí cố định
+// Thêm sticker lên camera video với vị trí và kích thước cố định
 function addStickerToCamera() {
   // Xóa sticker cũ nếu có
   const existingSticker = document.querySelector('.camera-sticker');
@@ -158,8 +165,11 @@ function addStickerToCamera() {
   // Tạo img element cho sticker ảnh
   const sticker = document.createElement('img');
   sticker.src = randomStickerData.url;
-  sticker.style.width = '80px';
-  sticker.style.height = '80px';
+  
+  // Áp dụng kích thước từ config (hoặc mặc định)
+  const stickerSize = randomStickerData.size || { width: '80px', height: '80px' };
+  sticker.style.width = stickerSize.width;
+  sticker.style.height = stickerSize.height;
   sticker.style.objectFit = 'contain';
   
   sticker.classList.add('camera-sticker');
