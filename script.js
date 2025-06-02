@@ -20,6 +20,15 @@ const enableDateCheckbox = document.getElementById('enableDate');
 
 let stream = null;
 
+// Danh sách sticker ảnh
+const imageStickers = [
+  'a.webp',
+  'b.webp'
+];
+
+// Tất cả sticker (chỉ ảnh)
+const availableStickers = [...imageStickers];
+
 // Mở camera
 async function startCamera() {
   try {
@@ -50,13 +59,135 @@ function showCountdown(seconds) {
   });
 }
 
-// Chụp ảnh từ video
+// Chụp ảnh từ video (bao gồm cả sticker)
 function takePhoto() {
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const ctx = canvas.getContext('2d');
+  
+  // Vẽ video lên canvas
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  // Vẽ sticker lên canvas nếu có
+  const cameraSticker = document.querySelector('.camera-sticker');
+  if (cameraSticker) {
+    const cameraWrapper = document.querySelector('.camera-wrapper');
+    const videoRect = video.getBoundingClientRect();
+    const stickerRect = cameraSticker.getBoundingClientRect();
+    
+    // Tính toán vị trí sticker tương đối với video
+    const scaleX = canvas.width / videoRect.width;
+    const scaleY = canvas.height / videoRect.height;
+    
+    const stickerX = (stickerRect.left - videoRect.left) * scaleX;
+    const stickerY = (stickerRect.top - videoRect.top) * scaleY;
+    
+    // Kiểm tra loại sticker
+    if (cameraSticker.tagName === 'IMG') {
+      // Vẽ sticker ảnh
+      const stickerWidth = 80 * Math.min(scaleX, scaleY);
+      const stickerHeight = 80 * Math.min(scaleX, scaleY);
+      
+      // Tạo promise để đợi ảnh load
+      const img = new Image();
+      img.onload = function() {
+        ctx.drawImage(img, stickerX, stickerY, stickerWidth, stickerHeight);
+      };
+      img.src = cameraSticker.src;
+      
+      // Vẽ ngay lập tức nếu ảnh đã được cache
+      if (img.complete) {
+        ctx.drawImage(img, stickerX, stickerY, stickerWidth, stickerHeight);
+      }
+    } else {
+      // Vẽ emoji sticker
+      ctx.font = `${48 * Math.min(scaleX, scaleY)}px Arial`;
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Vẽ outline cho text
+      ctx.strokeText(cameraSticker.textContent, stickerX + 24 * scaleX, stickerY + 24 * scaleY);
+      ctx.fillText(cameraSticker.textContent, stickerX + 24 * scaleX, stickerY + 24 * scaleY);
+    }
+  }
+  
   return canvas.toDataURL('image/png');
+}
+
+// Thêm sticker lên camera video
+function addStickerToCamera() {
+  // Xóa sticker cũ nếu có
+  const existingSticker = document.querySelector('.camera-sticker');
+  if (existingSticker) {
+    existingSticker.remove();
+  }
+
+  // Chọn sticker ngẫu nhiên
+  const randomSticker = availableStickers[Math.floor(Math.random() * availableStickers.length)];
+  
+  // Kiểm tra xem là emoji hay ảnh
+  const isImageSticker = imageStickers.includes(randomSticker);
+  
+  // Tạo sticker element
+  let sticker;
+  if (isImageSticker) {
+    // Tạo img element cho sticker ảnh
+    sticker = document.createElement('img');
+    sticker.src = randomSticker;
+    sticker.style.width = '80px';
+    sticker.style.height = '80px';
+    sticker.style.objectFit = 'contain';
+  } else {
+    // Tạo div element cho emoji sticker
+    sticker = document.createElement('div');
+    sticker.textContent = randomSticker;
+    sticker.style.fontSize = '48px';
+  }
+  
+  sticker.classList.add('camera-sticker');
+  
+  // Style chung cho sticker
+  sticker.style.position = 'absolute';
+  sticker.style.zIndex = '20';
+  sticker.style.pointerEvents = 'none';
+  sticker.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+  sticker.style.filter = 'drop-shadow(2px 2px 4px rgba(0,0,0,0.8))';
+  
+  // Vị trí ngẫu nhiên trên camera
+  const positions = [
+    { top: '20px', right: '20px' },
+    { top: '20px', left: '20px' },
+    { bottom: '20px', right: '20px' },
+    { bottom: '20px', left: '20px' },
+    { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+  ];
+  
+  const randomPosition = positions[Math.floor(Math.random() * positions.length)];
+  Object.assign(sticker.style, randomPosition);
+  
+  // Thêm sticker vào camera wrapper
+  const cameraWrapper = document.querySelector('.camera-wrapper');
+  cameraWrapper.style.position = 'relative';
+  cameraWrapper.appendChild(sticker);
+}
+
+// Xóa sticker trên camera
+function removeCameraSticker() {
+  const existingSticker = document.querySelector('.camera-sticker');
+  if (existingSticker) {
+    existingSticker.remove();
+  }
+}
+
+// Xóa tất cả sticker tự động
+function clearAutoStickers() {
+  document.querySelectorAll('.auto-sticker').forEach(sticker => {
+    sticker.remove();
+  });
 }
 
 // Xóa ảnh thumbnail
@@ -65,6 +196,7 @@ function clearThumbnails() {
     img.src = '';
     img.style.display = 'none';
   });
+  removeCameraSticker();
 }
 
 // Chụp 4 ảnh liên tiếp
@@ -73,9 +205,15 @@ async function takePhotosSequence() {
   starMessage.style.display = 'none';
 
   for (let i = 0; i < thumbnails.length; i++) {
+    // Thêm sticker lên camera trước khi đếm ngược
+    addStickerToCamera();
+    
     await showCountdown(3);
     thumbnails[i].src = takePhoto();
     thumbnails[i].style.display = 'block';
+    
+    // Xóa sticker trên camera sau khi chụp
+    removeCameraSticker();
   }
 
   starMessage.style.display = 'block';
@@ -100,13 +238,13 @@ function renderPhotostrip() {
   });
 }
 
-// Xóa sticker
+// Xóa sticker (chỉ trong edit mode)
 function removeStickers() {
   photostripPreview.querySelectorAll('.sticker').forEach(s => s.remove());
   document.querySelectorAll('.emoji-sticker, .sticker-option').forEach(s => s.classList.remove('selected'));
 }
 
-// Thêm sticker emoji
+// Thêm sticker emoji (trong edit mode)
 function addSticker(emoji) {
   removeStickers();
 
@@ -121,7 +259,7 @@ function addSticker(emoji) {
   });
 }
 
-// Thêm sticker ảnh
+// Thêm sticker ảnh (trong edit mode)
 function addImageSticker(url) {
   removeStickers();
 
@@ -244,7 +382,7 @@ downloadBtn.addEventListener('click', () => {
   });
 });
 
-// Ảnh test
+// Ảnh test với sticker trên camera
 function loadTestImages() {
   const urls = [
       'stickers/ling1.jpg',
