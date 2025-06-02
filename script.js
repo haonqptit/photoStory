@@ -20,11 +20,38 @@ const enableDateCheckbox = document.getElementById('enableDate');
 
 let stream = null;
 
-// Danh sách sticker ảnh
+// Danh sách sticker ảnh với vị trí cố định
 const imageStickers = [
-  'a.webp',
-  'b.webp'
+  {
+    url: 'a.webp',
+    position: { top: '20px', right: '20px' },
+    size: { width: '150px', height: '150px' } // Sticker to
+  },
+  {
+    url: 'b.webp',
+    position: { bottom: '20px', left: '20px' },
+    size: { width: '100px', height: '80px' } // Sticker hình chữ nhật
+  }
 ];
+
+// const imageStickers = [
+//   {
+//     url: 'a.webp',
+//     position: { top: '20px', right: '20px' }
+//   },
+//   {
+//     url: 'b.webp',
+//     position: { bottom: '20px', left: '20px' }
+//   },
+//   {
+//     url: 'c.webp',
+//     position: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+//   },
+//   {
+//     url: 'd.webp',
+//     position: { top: '20px', left: '20px' }
+//   }
+// ];
 
 // Tất cả sticker (chỉ ảnh)
 const availableStickers = [...imageStickers];
@@ -114,11 +141,10 @@ function takePhoto() {
       ctx.fillText(cameraSticker.textContent, stickerX + 24 * scaleX, stickerY + 24 * scaleY);
     }
   }
-  
   return canvas.toDataURL('image/png');
 }
 
-// Thêm sticker lên camera video
+// Thêm sticker lên camera video với vị trí cố định
 function addStickerToCamera() {
   // Xóa sticker cũ nếu có
   const existingSticker = document.querySelector('.camera-sticker');
@@ -126,27 +152,15 @@ function addStickerToCamera() {
     existingSticker.remove();
   }
 
-  // Chọn sticker ngẫu nhiên
-  const randomSticker = availableStickers[Math.floor(Math.random() * availableStickers.length)];
+  // Chọn sticker ngẫu nhiên từ danh sách
+  const randomStickerData = availableStickers[Math.floor(Math.random() * availableStickers.length)];
   
-  // Kiểm tra xem là emoji hay ảnh
-  const isImageSticker = imageStickers.includes(randomSticker);
-  
-  // Tạo sticker element
-  let sticker;
-  if (isImageSticker) {
-    // Tạo img element cho sticker ảnh
-    sticker = document.createElement('img');
-    sticker.src = randomSticker;
-    sticker.style.width = '80px';
-    sticker.style.height = '80px';
-    sticker.style.objectFit = 'contain';
-  } else {
-    // Tạo div element cho emoji sticker
-    sticker = document.createElement('div');
-    sticker.textContent = randomSticker;
-    sticker.style.fontSize = '48px';
-  }
+  // Tạo img element cho sticker ảnh
+  const sticker = document.createElement('img');
+  sticker.src = randomStickerData.url;
+  sticker.style.width = '80px';
+  sticker.style.height = '80px';
+  sticker.style.objectFit = 'contain';
   
   sticker.classList.add('camera-sticker');
   
@@ -154,20 +168,10 @@ function addStickerToCamera() {
   sticker.style.position = 'absolute';
   sticker.style.zIndex = '20';
   sticker.style.pointerEvents = 'none';
-  sticker.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
   sticker.style.filter = 'drop-shadow(2px 2px 4px rgba(0,0,0,0.8))';
   
-  // Vị trí ngẫu nhiên trên camera
-  const positions = [
-    { top: '20px', right: '20px' },
-    { top: '20px', left: '20px' },
-    { bottom: '20px', right: '20px' },
-    { bottom: '20px', left: '20px' },
-    { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
-  ];
-  
-  const randomPosition = positions[Math.floor(Math.random() * positions.length)];
-  Object.assign(sticker.style, randomPosition);
+  // Áp dụng vị trí cố định từ config
+  Object.assign(sticker.style, randomStickerData.position);
   
   // Thêm sticker vào camera wrapper
   const cameraWrapper = document.querySelector('.camera-wrapper');
