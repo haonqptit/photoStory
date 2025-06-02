@@ -23,7 +23,7 @@ let stream = null;
 // Danh sách sticker ảnh với vị trí và kích thước cố định
 const imageStickers = [
   {
-    url: 'a.webp',
+    url: 'anhnen.png',
     position: { top: '20px', right: '20px' }, // Góc trên bên phải
     size: { width: '200px', height: '200px' } // Kích thước rất to để test
   },
