@@ -593,9 +593,6 @@ footer {
   backdrop-filter: blur(5px);
 }
 
-#camera {
-  transform: scaleX(-1)
-}
-video {
+video.mirror {
   transform: scaleX(-1);
 }

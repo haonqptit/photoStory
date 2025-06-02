@@ -92,6 +92,7 @@ function showCountdown(seconds) {
 }
 
 // Chụp ảnh từ video (bao gồm cả sticker)
+
 function takePhoto() {
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
@@ -99,8 +100,8 @@ function takePhoto() {
   const ctx = canvas.getContext('2d');
 
   // Lật khung hình theo chiều ngang (mirror)
-  ctx.translate(canvas.width, 0);  // Dời hệ trục sang bên phải
-  ctx.scale(-1, 1);                // Lật trục X
+  // ctx.translate(canvas.width, 0);  // Dời hệ trục sang bên phải
+  // ctx.scale(-1, 1);                // Lật trục X
 
   // Vẽ video đã lật
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
