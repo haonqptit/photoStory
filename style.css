@@ -592,3 +592,7 @@ footer {
   border-radius: 20px;
   backdrop-filter: blur(5px);
 }
+
+#camera {
+  transform: scaleX(-1)
+}

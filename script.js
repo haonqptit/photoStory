@@ -34,7 +34,7 @@ const imageStickers = [
   }
 ];
 
-// Bạn có thể thêm nhiều sticker với vị trí và kích thước khác nhau:
+
 // const imageStickers = [
 //   {
 //     url: 'a.webp',
