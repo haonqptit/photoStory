@@ -19,47 +19,22 @@ const filterButtons = document.querySelectorAll('.filters button');
 const enableDateCheckbox = document.getElementById('enableDate');
 
 let stream = null;
+let capturedPhotos = []; // Lưu trữ ảnh đã chụp với thông tin sticker
 
 // Danh sách sticker ảnh với vị trí và kích thước cố định
 const imageStickers = [
   {
     url: 'anhanh.png',
-    position: { top: '20px', right: '20px' }, // Góc trên bên phải
-    size: { width: '340px', height: '300px' } // Kích thước rất to để test
+    position: { top: '20px', right: '20px' },
+    size: { width: '340px', height: '300px' }
   },
-  // {
-  //   url: 'b.webp', 
-  //   position: { bottom: '20px', left: '20px' }, // Góc dưới bên trái
-  //   size: { width: '150px', height: '150px' } // Kích thước to
-  // }
 ];
-
-
-// const imageStickers = [
-//   {
-//     url: 'a.webp',
-//     position: { top: '20px', right: '20px' },
-//     size: { width: '150px', height: '150px' } // Rất to
-//   },
-//   {
-//     url: 'b.webp',
-//     position: { bottom: '20px', left: '20px' },
-//     size: { width: '80px', height: '80px' } // Nhỏ
-//   },
-//   {
-//     url: 'c.webp',
-//     position: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
-//     size: { width: '200px', height: '200px' } // Cực to
-//   },
-//   {
-//     url: 'd.webp',
-//     position: { top: '20px', left: '20px' },
-//     size: { width: '100px', height: '120px' } // Hình chữ nhật
-//   }
-// ];
 
 // Tất cả sticker (chỉ ảnh)
 const availableStickers = [...imageStickers];
+
+// State quản lý sticker hiện tại
+let currentCameraSticker = null;
 
 // Mở camera
 async function startCamera() {
@@ -91,87 +66,89 @@ function showCountdown(seconds) {
   });
 }
 
-// Chụp ảnh từ video (bao gồm cả sticker)
+// Chụp ảnh từ video với sticker - cải thiện
+async function takePhoto() {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
 
-function takePhoto() {
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
+    // Vẽ video
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Lật khung hình theo chiều ngang (mirror)
-  // ctx.translate(canvas.width, 0);  // Dời hệ trục sang bên phải
-  // ctx.scale(-1, 1);                // Lật trục X
+    // Vẽ sticker nếu có
+    const cameraSticker = document.querySelector('.camera-sticker');
+    if (cameraSticker && cameraSticker.tagName === 'IMG') {
+      const videoRect = video.getBoundingClientRect();
+      const stickerRect = cameraSticker.getBoundingClientRect();
 
-  // Vẽ video đã lật
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const scaleX = canvas.width / videoRect.width;
+      const scaleY = canvas.height / videoRect.height;
 
-  // Vẽ sticker nếu có
-  const cameraSticker = document.querySelector('.camera-sticker');
-  if (cameraSticker) {
-    const videoRect = video.getBoundingClientRect();
-    const stickerRect = cameraSticker.getBoundingClientRect();
-
-    const scaleX = canvas.width / videoRect.width;
-    const scaleY = canvas.height / videoRect.height;
-
-    // Tính vị trí sticker gốc
-    const stickerX = (stickerRect.left - videoRect.left) * scaleX;
-    const stickerY = (stickerRect.top - videoRect.top) * scaleY;
-
-    // Tính lại vị trí X vì canvas đang bị lật ngược
-    const flippedStickerX = canvas.width - stickerX - (cameraSticker.offsetWidth * scaleX);
-
-    if (cameraSticker.tagName === 'IMG') {
-      const actualWidth = cameraSticker.offsetWidth || 120;
-      const actualHeight = cameraSticker.offsetHeight || 120;
-      const stickerWidth = actualWidth * Math.min(scaleX, scaleY);
-      const stickerHeight = actualHeight * Math.min(scaleX, scaleY);
+      const stickerX = (stickerRect.left - videoRect.left) * scaleX;
+      const stickerY = (stickerRect.top - videoRect.top) * scaleY;
+      const stickerWidth = cameraSticker.offsetWidth * scaleX;
+      const stickerHeight = cameraSticker.offsetHeight * scaleY;
 
       const img = new Image();
-      img.onload = function () {
-        ctx.drawImage(img, flippedStickerX, stickerY, stickerWidth, stickerHeight);
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        ctx.drawImage(img, stickerX, stickerY, stickerWidth, stickerHeight);
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          sticker: currentCameraSticker ? {
+            url: currentCameraSticker.url,
+            position: currentCameraSticker.position,
+            size: currentCameraSticker.size
+          } : null
+        });
+      };
+      img.onerror = function() {
+        console.error('Error loading sticker image');
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          sticker: null
+        });
       };
       img.src = cameraSticker.src;
-
+      
+      // Fallback nếu ảnh đã được cache
       if (img.complete) {
-        ctx.drawImage(img, flippedStickerX, stickerY, stickerWidth, stickerHeight);
+        ctx.drawImage(img, stickerX, stickerY, stickerWidth, stickerHeight);
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          sticker: currentCameraSticker ? {
+            url: currentCameraSticker.url,
+            position: currentCameraSticker.position,
+            size: currentCameraSticker.size
+          } : null
+        });
       }
     } else {
-      ctx.font = `${48 * Math.min(scaleX, scaleY)}px Arial`;
-      ctx.fillStyle = 'white';
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 2;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      const centerX = flippedStickerX + 24 * scaleX;
-      const centerY = stickerY + 24 * scaleY;
-      ctx.strokeText(cameraSticker.textContent, centerX, centerY);
-      ctx.fillText(cameraSticker.textContent, centerX, centerY);
+      resolve({
+        dataUrl: canvas.toDataURL('image/png'),
+        sticker: null
+      });
     }
-  }
-
-  return canvas.toDataURL('image/png');
+  });
 }
-
 
 // Thêm sticker lên camera video với vị trí và kích thước cố định
 function addStickerToCamera() {
   // Xóa sticker cũ nếu có
-  const existingSticker = document.querySelector('.camera-sticker');
-  if (existingSticker) {
-    existingSticker.remove();
-  }
+  removeCameraSticker();
 
   // Chọn sticker ngẫu nhiên từ danh sách
   const randomStickerData = availableStickers[Math.floor(Math.random() * availableStickers.length)];
+  currentCameraSticker = randomStickerData;
   
   // Tạo img element cho sticker ảnh
   const sticker = document.createElement('img');
   sticker.src = randomStickerData.url;
+  sticker.crossOrigin = 'anonymous';
   
-  // Áp dụng kích thước từ config (hoặc mặc định)
+  // Áp dụng kích thước từ config
   const stickerSize = randomStickerData.size || { width: '80px', height: '80px' };
   sticker.style.width = stickerSize.width;
   sticker.style.height = stickerSize.height;
@@ -200,13 +177,7 @@ function removeCameraSticker() {
   if (existingSticker) {
     existingSticker.remove();
   }
-}
-
-// Xóa tất cả sticker tự động
-function clearAutoStickers() {
-  document.querySelectorAll('.auto-sticker').forEach(sticker => {
-    sticker.remove();
-  });
+  currentCameraSticker = null;
 }
 
 // Xóa ảnh thumbnail
@@ -215,24 +186,35 @@ function clearThumbnails() {
     img.src = '';
     img.style.display = 'none';
   });
+  capturedPhotos = [];
   removeCameraSticker();
 }
 
-// Chụp 4 ảnh liên tiếp
+// Chụp 4 ảnh liên tiếp - cải thiện
 async function takePhotosSequence() {
   clearThumbnails();
   starMessage.style.display = 'none';
+  capturedPhotos = [];
 
   for (let i = 0; i < thumbnails.length; i++) {
     // Thêm sticker lên camera trước khi đếm ngược
     addStickerToCamera();
     
     await showCountdown(3);
-    thumbnails[i].src = takePhoto();
+    
+    // Chụp ảnh và lưu thông tin
+    const photoData = await takePhoto();
+    capturedPhotos.push(photoData);
+    
+    // Hiển thị thumbnail
+    thumbnails[i].src = photoData.dataUrl;
     thumbnails[i].style.display = 'block';
     
     // Xóa sticker trên camera sau khi chụp
     removeCameraSticker();
+    
+    // Delay nhỏ giữa các lần chụp
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   starMessage.style.display = 'block';
@@ -240,24 +222,26 @@ async function takePhotosSequence() {
   startBtn.style.display = 'none';
 }
 
-// Hiển thị photostrip
+// Hiển thị photostrip với sticker - cải thiện
 function renderPhotostrip() {
   photostripPreview.innerHTML = '';
-  thumbnails.forEach(img => {
-    if (img.src) {
+  
+  capturedPhotos.forEach((photoData, index) => {
+    if (photoData && photoData.dataUrl) {
       const wrapper = document.createElement('div');
       wrapper.classList.add('photo-wrapper');
+      wrapper.style.position = 'relative';
 
       const photo = document.createElement('img');
-      photo.src = img.src;
+      photo.src = photoData.dataUrl;
+      photo.crossOrigin = 'anonymous';
       wrapper.appendChild(photo);
-      
       photostripPreview.appendChild(wrapper);
     }
   });
 }
 
-// Xóa sticker (chỉ trong edit mode)
+// Xóa sticker (chỉ sticker edit, không xóa sticker gốc)
 function removeStickers() {
   photostripPreview.querySelectorAll('.sticker').forEach(s => s.remove());
   document.querySelectorAll('.emoji-sticker, .sticker-option').forEach(s => s.classList.remove('selected'));
@@ -265,32 +249,66 @@ function removeStickers() {
 
 // Thêm sticker emoji (trong edit mode)
 function addSticker(emoji) {
-  removeStickers();
+  // Chỉ xóa sticker edit, giữ lại sticker gốc
+  photostripPreview.querySelectorAll('.sticker').forEach(s => s.remove());
 
   const wrappers = photostripPreview.querySelectorAll('.photo-wrapper');
-  const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+  const positions = [
+    { top: '10px', left: '10px' },
+    { top: '10px', right: '10px' },
+    { bottom: '10px', left: '10px' },
+    { bottom: '10px', right: '10px' }
+  ];
 
   wrappers.forEach((wrapper, index) => {
     const sticker = document.createElement('div');
-    sticker.classList.add('sticker', positions[index % positions.length]);
+    sticker.classList.add('sticker');
     sticker.textContent = emoji;
+    sticker.style.position = 'absolute';
+    sticker.style.zIndex = '15';
+    sticker.style.fontSize = '28px';
+    sticker.style.pointerEvents = 'none';
+    sticker.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+    sticker.style.userSelect = 'none';
+    
+    // Áp dụng vị trí cụ thể
+    const pos = positions[index % positions.length];
+    Object.assign(sticker.style, pos);
+    
     wrapper.appendChild(sticker);
   });
 }
 
 // Thêm sticker ảnh (trong edit mode)
 function addImageSticker(url) {
-  removeStickers();
+  // Chỉ xóa sticker edit, giữ lại sticker gốc
+  photostripPreview.querySelectorAll('.sticker').forEach(s => s.remove());
 
   const wrappers = photostripPreview.querySelectorAll('.photo-wrapper');
-  const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+  const positions = [
+    { top: '10px', left: '10px' },
+    { top: '10px', right: '10px' },
+    { bottom: '10px', left: '10px' },
+    { bottom: '10px', right: '10px' }
+  ];
 
   wrappers.forEach((wrapper, index) => {
     const sticker = document.createElement('img');
-    sticker.classList.add('sticker', positions[index % positions.length]);
+    sticker.classList.add('sticker');
     sticker.src = url;
+    sticker.crossOrigin = 'anonymous';
     sticker.style.width = '40px';
     sticker.style.height = '40px';
+    sticker.style.position = 'absolute';
+    sticker.style.zIndex = '15';
+    sticker.style.pointerEvents = 'none';
+    sticker.style.userSelect = 'none';
+    sticker.style.filter = 'drop-shadow(2px 2px 4px rgba(0,0,0,0.8))';
+    
+    // Áp dụng vị trí cụ thể
+    const pos = positions[index % positions.length];
+    Object.assign(sticker.style, pos);
+    
     wrapper.appendChild(sticker);
   });
 }
@@ -314,7 +332,9 @@ function setBgColor(color) {
 // Áp filter ảnh
 function applyFilter(filter) {
   document.querySelectorAll('.photo-wrapper img').forEach(img => {
-    img.style.filter = filter === 'none' ? '' : filter;
+    if (!img.classList.contains('sticker') && !img.classList.contains('original-sticker')) {
+      img.style.filter = filter === 'none' ? '' : filter;
+    }
   });
 }
 
@@ -326,11 +346,41 @@ function toggleDate() {
       const dateEl = document.createElement('div');
       dateEl.classList.add('photostrip-date');
       dateEl.textContent = new Date().toLocaleDateString('vi-VN');
+      dateEl.style.position = 'absolute';
+      dateEl.style.bottom = '10px';
+      dateEl.style.right = '10px';
+      dateEl.style.fontSize = '12px';
+      dateEl.style.color = '#666';
+      dateEl.style.zIndex = '20';
       photostripPreview.appendChild(dateEl);
     }
   } else {
     if (existingDate) existingDate.remove();
   }
+}
+
+// Fallback download method
+function downloadWithDomToImage() {
+  console.log('Using fallback download method');
+  // Tạo canvas thủ công để download
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 400;
+  canvas.height = 600;
+  
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Vẽ text thông báo
+  ctx.fillStyle = '#333';
+  ctx.font = '16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Download failed - Please try again', canvas.width/2, canvas.height/2);
+  
+  const link = document.createElement('a');
+  link.download = 'photostrip_fallback.png';
+  link.href = canvas.toDataURL();
+  link.click();
 }
 
 // Khởi động camera
@@ -393,11 +443,58 @@ filterButtons.forEach(btn => {
 enableDateCheckbox.addEventListener('change', toggleDate);
 
 downloadBtn.addEventListener('click', () => {
-  html2canvas(photostripPreview).then(canvas => {
-    const link = document.createElement('a');
-    link.download = 'photostrip.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+  // Đảm bảo tất cả ảnh đã load xong
+  const images = photostripPreview.querySelectorAll('img');
+  let loadedCount = 0;
+  const totalImages = images.length;
+  
+  if (totalImages === 0) {
+    downloadWithDomToImage();
+    return;
+  }
+  
+  function checkAllLoaded() {
+    loadedCount++;
+    if (loadedCount >= totalImages) {
+      // Tất cả ảnh đã load, tiến hành capture
+      setTimeout(() => {
+        html2canvas(photostripPreview, {
+          useCORS: true,
+          allowTaint: true,
+          scale: 2,
+          logging: false,
+          backgroundColor: '#ffffff',
+          ignoreElements: function(element) {
+            return element.classList && element.classList.contains('ignore-capture');
+          },
+          onclone: function(clonedDoc) {
+            const clonedStickers = clonedDoc.querySelectorAll('.sticker, .original-sticker');
+            clonedStickers.forEach(sticker => {
+              sticker.style.position = 'absolute';
+              sticker.style.zIndex = sticker.classList.contains('original-sticker') ? '10' : '15';
+              sticker.style.pointerEvents = 'none';
+            });
+          }
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `photostrip_${Date.now()}.png`;
+          link.href = canvas.toDataURL('image/png', 0.9);
+          link.click();
+        }).catch(error => {
+          console.error('Error generating image:', error);
+          downloadWithDomToImage();
+        });
+      }, 100);
+    }
+  }
+  
+  images.forEach(img => {
+    if (img.complete) {
+      checkAllLoaded();
+    } else {
+      img.onload = checkAllLoaded;
+      img.onerror = checkAllLoaded;
+    }
   });
 });
 
@@ -405,15 +502,26 @@ downloadBtn.addEventListener('click', () => {
 function loadTestImages() {
   const urls = [
       'stickers/ling1.jpg',
-      'stickers/ling2.jpg',
+      'stickers/ling2.jpg', 
       'stickers/ling3.jpg',
       'stickers/ling4.jpg'
   ];
+
+  // Tạo dữ liệu test giống như ảnh thật
+  capturedPhotos = urls.map(url => ({
+    dataUrl: url,
+    sticker: {
+      url: 'anhanh.png',
+      position: { top: '20px', right: '20px' },
+      size: { width: '340px', height: '300px' }
+    }
+  }));
 
   thumbnails.forEach((img, i) => {
     img.src = urls[i];
     img.style.display = 'block';
   });
+  
   starMessage.style.display = 'block';
   afterButtons.style.display = 'flex';
   startBtn.style.display = 'none';
